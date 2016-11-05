@@ -44,6 +44,34 @@ class SpecificationRepository extends EntityRepository
     }
 
     /**
+     * Get the query for a "SELECT COUNT(e) FROM entityName" after matching with given specification.
+     *
+     * @param SpecificationInterface $specification
+     * @param ModifierInterface      $modifier
+     *
+     * @throws LogicException
+     *
+     * @return Query
+     */
+    public function countMatching(SpecificationInterface $specification, ModifierInterface $modifier = null)
+    {
+        if (! $specification->isSatisfiedBy($this->getEntityName())) {
+            throw new LogicException(sprintf(
+                'Specification "%s" not supported by this repository!',
+                get_class($specification)
+            ));
+        }
+
+        $queryBuilder = $this->getEntityManager()->createQueryBuilder()->select(
+            $this->getEntityManager()->getExpressionBuilder()->count($this->dqlAlias)
+        )
+            ->from($this->_entityName, $this->dqlAlias);
+        $this->modifyQueryBuilder($queryBuilder, $specification);
+
+        return $this->modifyQuery($queryBuilder, $modifier);
+    }
+    
+    /**
      * Modifies the QueryBuilder according to the passed Specification.
      * Will also set the condition for this query if needed.
      *
